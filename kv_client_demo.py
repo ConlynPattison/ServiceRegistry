@@ -31,14 +31,20 @@ def put_get_delete_cycle(instance_address: str, key: str) -> None:
     base = instance_address.rstrip("/")
     value = {"demo": "value", "instance": instance_address}
 
+    print(f"  PUT  /kv/{key} -> {base}")
     put_resp = requests.put(f"{base}/kv/{key}", json={"value": value}, timeout=5)
     put_resp.raise_for_status()
+    print(f"    {put_resp.status_code} {put_resp.json()}")
 
+    print(f"  GET  /kv/{key} -> {base}")
     get_resp = requests.get(f"{base}/kv/{key}", timeout=5)
     get_resp.raise_for_status()
+    print(f"    {get_resp.status_code} {get_resp.json()}")
 
+    print(f"  DELETE /kv/{key} -> {base}")
     del_resp = requests.delete(f"{base}/kv/{key}", timeout=5)
     del_resp.raise_for_status()
+    print(f"    {del_resp.status_code} {del_resp.json()}")
 
 
 def main() -> None:
@@ -46,16 +52,19 @@ def main() -> None:
     print(f"Using registry at {registry_url}")
 
     check_registry_health(registry_url)
+    print("Registry is healthy")
 
     instances = discover_kv_service(registry_url)
-    print(f"Discovered {len(instances)} kv-service instance(s)")
+    print(f"Discovered {len(instances)} kv-service instance(s):")
+    for instance in instances:
+        print(f"  - {instance['address']}")
 
     chosen = random.choice(instances)
     address = chosen["address"]
-    print(f"Chose instance: {address}")
+    print(f"\nRandomly chose instance: {address}\n")
 
     put_get_delete_cycle(address, "demo-key")
-    print("Completed PUT/GET/DELETE cycle on chosen instance")
+    print("\nCompleted PUT/GET/DELETE cycle successfully")
 
 
 if __name__ == "__main__":

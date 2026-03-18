@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY service_registry_improved.py .
 COPY example_service.py .
 COPY kv_service.py .
+COPY kv_client_demo.py .
 
 # Expose common ports
 EXPOSE 5001 8001

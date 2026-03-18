@@ -34,8 +34,14 @@ def register_with_registry() -> bool:
             json={"service": SERVICE_NAME, "address": address},
             timeout=5,
         )
-        return response.status_code in (200, 201)
-    except Exception:
+        ok = response.status_code in (200, 201)
+        if ok:
+            print(f"Registered {SERVICE_NAME} at {address}")
+        else:
+            print(f"Registration failed: {response.status_code} {response.text}")
+        return ok
+    except Exception as exc:
+        print(f"Registration error: {exc}")
         return False
 
 
@@ -51,16 +57,18 @@ def deregister_from_registry() -> None:
         pass
 
 
-def send_heartbeat() -> None:
+def send_heartbeat() -> bool:
+    """Returns True if heartbeat was accepted, False otherwise."""
     address = get_service_address()
     try:
-        requests.post(
+        resp = requests.post(
             f"{REGISTRY_URL}/heartbeat",
             json={"service": SERVICE_NAME, "address": address},
             timeout=5,
         )
+        return resp.status_code == 200
     except Exception:
-        pass
+        return False
 
 
 stop_event = threading.Event()
@@ -68,7 +76,8 @@ stop_event = threading.Event()
 
 def heartbeat_loop(interval_seconds: int = 10) -> None:
     while not stop_event.is_set():
-        send_heartbeat()
+        if not send_heartbeat():
+            register_with_registry()
         stop_event.wait(interval_seconds)
 
 

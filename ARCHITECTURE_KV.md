@@ -8,15 +8,14 @@ flowchart LR
       kvPod1["KVService Pod 1\n(kv-service, port 8001)"]
       kvPod2["KVService Pod 2\n(kv-service, port 8001)"]
     end
+    clientPod["ClientPod\n(kv_client_demo.py)"]
   end
 
-  clientProcess["ClientProcess\n(kv_client_demo.py)"]
-
-  clientProcess -->|"1. GET /discover/kv-service"| registry
-  registry -->|"2. JSON instances[]"| clientProcess
-  clientProcess -->|"3. Randomly choose instance"| clientProcess
-  clientProcess -->|"4. PUT/GET/DELETE /kv/<key>"| kvPod1
-  clientProcess -->|"4. PUT/GET/DELETE /kv/<key>"| kvPod2
+  clientPod -->|"1. GET /discover/kv-service"| registry
+  registry -->|"2. JSON instances[]"| clientPod
+  clientPod -->|"3. Randomly choose instance"| clientPod
+  clientPod -->|"4. PUT/GET/DELETE /kv/<key>"| kvPod1
+  clientPod -->|"4. PUT/GET/DELETE /kv/<key>"| kvPod2
 
   kvPod1 -->|"register, heartbeat"| registry
   kvPod2 -->|"register, heartbeat"| registry
@@ -28,9 +27,8 @@ flowchart LR
 - On startup, each pod:
   - Determines its address using the Kubernetes-provided `POD_IP`.
   - Registers itself with the `service-registry` under the logical name `kv-service`.
-  - Sends periodic heartbeats so the registry can track active instances.
-- The `kv_client_demo.py` process:
-  - Calls the registry’s `/discover/kv-service` endpoint to retrieve the list of active instances.
+  - Sends periodic heartbeats so the registry can track active instances. If a heartbeat is rejected (e.g., after a registry restart), the pod automatically re-registers.
+- The `kv_client_demo.py` client runs as a one-off pod inside the cluster (via `kubectl run`) so it can reach pod-internal IPs directly. It:
+  - Calls the registry's `/discover/kv-service` endpoint to retrieve the list of active instances.
   - Chooses a random instance from the returned `instances` list.
-  - Performs a simple `PUT` → `GET` → `DELETE` cycle on `/kv/<key>` against the chosen instance to demonstrate request routing via discovery.
-
+  - Performs a `PUT` / `GET` / `DELETE` cycle on `/kv/<key>` against the chosen instance to demonstrate request routing via discovery.
