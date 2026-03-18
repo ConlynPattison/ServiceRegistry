@@ -67,7 +67,7 @@ kubectl port-forward service/service-registry 5001:5001
 curl http://localhost:5001/health
 ```
 
-### Step 5: Deploy Example Services
+### Step 5: Deploy Example Services (User & Payment)
 
 ```bash
 # Deploy user-service and payment-service
@@ -82,7 +82,25 @@ kubectl get pods
 # - payment-service-xxx (1 pod)
 ```
 
-### Step 6: Test Service Discovery
+### Step 6: Deploy Key-Value Service (kv-service)
+
+```bash
+# Deploy kv-service (2 replicas, ClusterIP service)
+kubectl apply -f k8s/kv-service-deployment.yaml
+
+# Check pods and services
+kubectl get pods
+kubectl get svc
+```
+
+You should now see:
+
+- `service-registry-xxx` (1 pod)
+- `user-service-xxx` (2 pods)
+- `payment-service-xxx` (1 pod)
+- `kv-service-xxx` (2 pods)
+
+### Step 7: Test Service Discovery (including kv-service)
 
 ```bash
 # Port forward the registry
@@ -95,6 +113,20 @@ curl http://localhost:5001/services
 curl http://localhost:5001/discover/user-service
 
 # You should see 2 instances of user-service!
+
+# Discover kv-service
+curl http://localhost:5001/discover/kv-service
+
+# You should see 2 instances of kv-service!
+
+# Run the Python demo client (from your machine, not inside the cluster)
+python kv_client_demo.py  # uses http://localhost:5001 by default
+
+# The script will:
+# - Check registry health
+# - Discover kv-service
+# - Randomly choose one instance
+# - Perform PUT/GET/DELETE on /kv/demo-key against the chosen instance
 ```
 
 ## 🔍 Monitoring and Debugging

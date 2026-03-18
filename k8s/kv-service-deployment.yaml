@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kv-service
+  labels:
+    app: kv-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kv-service
+  template:
+    metadata:
+      labels:
+        app: kv-service
+    spec:
+      containers:
+      - name: kv-service
+        image: service-registry:latest
+        imagePullPolicy: Never
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: REGISTRY_URL
+          value: "http://service-registry:5001"
+        - name: SERVICE_ROLE
+          value: "kv-service"
+        - name: SERVICE_PORT
+          value: "8001"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        ports:
+        - containerPort: 8001
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kv-service
+  labels:
+    app: kv-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: http
+  selector:
+    app: kv-service
+
